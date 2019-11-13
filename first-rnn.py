@@ -2,7 +2,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 # TensorFlow and tf.keras
 import tensorflow as tf
-from tensorflow import keras
+# from tensorflow import keras
+# from keras.models import Sequential, Graph
+
+
 
 # Helper libraries
 import numpy as np
@@ -61,17 +64,20 @@ dataset = dataset.cache().shuffle(24).batch(4).repeat()
 
 # for feat, targ in dataset.take(2):
 # 	print ('Features: {}, Target: {}'.format(feat, targ))
-
-simple_lstm_model = tf.keras.models.Sequential([
-    tf.keras.layers.LSTM(8, input_shape=train_data.shape[-2:]),
-    tf.keras.layers.Dense(1)
-])
+BATCH_SIZE = 1
+TIME_STEPS = 1
 
 
-simple_lstm_model.compile(optimizer='adam', loss='mae')
+lstm_model = tf.keras.Sequential()
+lstm_model.add(tf.keras.LSTM(100, batch_input_shape=(BATCH_SIZE, TIME_STEPS, train_data.shape[2]), dropout=0.0, recurrent_dropout=0.0, stateful=True,     kernel_initializer='random_uniform'))
+lstm_model.add(Dropout(0.5))
+lstm_model.add(Dense(20,activation='relu'))
+lstm_model.add(Dense(1,activation='sigmoid'))
+optimizer = optimizers.RMSprop(lr=lr)
+lstm_model.compile(loss='mean_squared_error', optimizer=optimizer)
 
 for x, y in dataset.take(1):
-    print(simple_lstm_model.predict(x).shape)
+    print(lstm_model.predict(x).shape)
 
 
 
