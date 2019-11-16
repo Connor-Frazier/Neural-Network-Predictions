@@ -35,9 +35,9 @@ data = data.select_dtypes(exclude=['object'])
 data = data.loc[:, (data != 0).any(axis=0)]
 #Need to remove rows if they have nan in some of the cells
 
-
-#Create, a train test split, testing if the model can predict the most recent quarter
-#This may need more
+#Setting variables
+steps = 4
+featuresCount = 13
 TEST_SPLIT = 5
 TRAIN_SPLIT = len(data) - TEST_SPLIT
 
@@ -47,8 +47,6 @@ data_std = data[:TRAIN_SPLIT].std(axis=0)
 data = (data-data_mean)/data_std
 
 #Setting parameters and creating data points and labels
-steps = 4
-featuresCount = 13
 train_data = []
 train_labels = []
 
@@ -74,8 +72,8 @@ for j in range(TEST_SPLIT):
 test_data = np.array(test_data)
 test_labels = np.array(test_labels)
 
-train_data = train_data.reshape((train_data.shape[0], train_data.shape[1], featuresCount))
 
+train_data = train_data.reshape((train_data.shape[0], train_data.shape[1], featuresCount))
 model = Sequential()
 model.add(LSTM(50, activation='relu', input_shape=(steps, featuresCount)))
 model.add(Dense(4))
@@ -94,8 +92,9 @@ for k in range(TEST_SPLIT):
 	print(test_labels[k])
 
 #The true way to evaluate(i think but the accuracy is always 0 because the numbers are not exact)
-# test_loss, test_acc = model.evaluate(test_data,  test_labels)
+test_data = test_data.reshape((test_data.shape[0], test_data.shape[1], featuresCount))
+test_loss, test_acc = model.evaluate(test_data,  test_labels)
 
-# print('\nTest accuracy:', test_acc)
+print('\nTest accuracy:', test_acc)
 
 
