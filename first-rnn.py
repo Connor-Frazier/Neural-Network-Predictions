@@ -2,8 +2,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 # TensorFlow and tf.keras
 import tensorflow as tf
-# from tensorflow import keras
-# from keras.models import Sequential, Graph
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
+from keras.layers import Dropout
 
 
 
@@ -19,66 +21,81 @@ import quandl
 
 #Getting data
 quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
-data = quandl.get_table('SHARADAR/SF1', ticker='AAPL', dimension='ARQ', calendardate={'gte':'2013-09-01','lte':'2020-01-10'}, paginate=True)
+data = quandl.get_table('SHARADAR/SF1',
+                         dimension = "ARQ",
+                         qopts={"columns":['datekey','revenueusd','assets','capex','debt','ebit','equityusd','ev','fcf','inventory','marketcap','netinc','taxexp','workingcapital']},
+                         ticker='MSFT')
 
-#cleaning out timestamps
-data.pop('calendardate')
+# Reversing the data so that the oldest timestamp is first
+data = data.iloc[::-1]
 data.pop('datekey')
-data.pop('reportperiod')
-data.pop('lastupdated')
-
-#Create, a train test split, testing if the model can predict the most recent quarter
-#This may need more
-TRAIN_SPLIT = 23
 
 #Removing emtpty data columns
 data = data.select_dtypes(exclude=['object'])
+data = data.loc[:, (data != 0).any(axis=0)]
+#Need to remove rows if they have nan in some of the cells
+
+
+#Create, a train test split, testing if the model can predict the most recent quarter
+#This may need more
+TEST_SPLIT = 5
+TRAIN_SPLIT = len(data) - TEST_SPLIT
 
 #Normalizing
 data_mean = data[:TRAIN_SPLIT].mean(axis=0)
 data_std = data[:TRAIN_SPLIT].std(axis=0)
-#zscore calculation across data matrix
 data = (data-data_mean)/data_std
 
-#Creating data points and labels
+#Setting parameters and creating data points and labels
+steps = 4
+featuresCount = 13
 train_data = []
 train_labels = []
-#Data points at the moment consist of a history of 4 qvalue data points and the 5th as the target
-for i in range(21):
-	train_data.append(data.loc[i:i+3, :].values)
-	#'accoci':'assetsnc' are example columns, will be an array for the 4/5 values we choose
-	train_labels.append(data.loc[i+4, 'accoci':'assetsnc'].values)
 
+#Data points at the moment consist of a history of 4 qvalue data points and the 5th as the target
+for i in range(TRAIN_SPLIT):
+	train_data.append(data.iloc[i:i+steps, :].values)
+	#'accoci':'assetsnc' are example columns, will be an array for the 4/5 values we choose
+	train_labels.append(data.loc[i+steps, 'ebit':'fcf'].values)
+	
 train_data = np.array(train_data)
 train_labels = np.array(train_labels)
 
-#creating tensor with features and target values
-dataset = tf.data.Dataset.from_tensor_slices((train_data, train_labels))
 
-#Showing a couple training data points and labels as examples.
-for feat, targ in dataset.take(2):
-	print ('Features: {}, Target: {}'.format(feat, targ))
+#Setting up test data
+test_data = []
+test_labels = []
 
-#Dataset is now a tensor where each data point is made up of 4 data points 
-#and the next point as the label
+for j in range(TEST_SPLIT):
+	temp = TRAIN_SPLIT - 1 - steps + j
+	test_data.append(data.iloc[temp:temp + steps, :].values)
+	test_labels.append(data.loc[TRAIN_SPLIT + j, 'ebit':'fcf'].values)
 
-#BELOW, unfinished, model creation and testing is next
-#The tensor structure may need to be adjusted for the needs of the model
-dataset = dataset.cache().shuffle(24).batch(4).repeat()	
+test_data = np.array(test_data)
+test_labels = np.array(test_labels)
 
-BATCH_SIZE = 1
-TIME_STEPS = 1
+train_data = train_data.reshape((train_data.shape[0], train_data.shape[1], featuresCount))
 
-lstm_model = tf.keras.Sequential()
-lstm_model.add(tf.keras.LSTM(100, batch_input_shape=(BATCH_SIZE, TIME_STEPS, train_data.shape[2]), dropout=0.0, recurrent_dropout=0.0, stateful=True,     kernel_initializer='random_uniform'))
-lstm_model.add(Dropout(0.5))
-lstm_model.add(Dense(20,activation='relu'))
-lstm_model.add(Dense(1,activation='sigmoid'))
-optimizer = optimizers.RMSprop(lr=lr)
-lstm_model.compile(loss='mean_squared_error', optimizer=optimizer)
+model = Sequential()
+model.add(LSTM(50, activation='relu', input_shape=(steps, featuresCount)))
+model.add(Dense(4))
+model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
 
-for x, y in dataset.take(1):
-    print(lstm_model.predict(x).shape)
+model.fit(train_data, train_labels, epochs=200)
 
+# predicting the test data points
+for k in range(TEST_SPLIT):
+	x_input = test_data[k]
+	x_input = x_input.reshape((1, steps, featuresCount))
+	yhat = model.predict(x_input, verbose=0)
+	print("Prediction: ")
+	print(yhat)
+	print("True: ")
+	print(test_labels[k])
+
+#The true way to evaluate(i think but the accuracy is always 0 because the numbers are not exact)
+# test_loss, test_acc = model.evaluate(test_data,  test_labels)
+
+# print('\nTest accuracy:', test_acc)
 
 
