@@ -40,6 +40,7 @@ steps = 4
 featuresCount = 13
 TEST_SPLIT = 5
 TRAIN_SPLIT = len(data) - TEST_SPLIT
+numberOfPredictedFeatures = 4
 
 #Normalizing
 data_mean = data[:TRAIN_SPLIT].mean(axis=0)
@@ -82,15 +83,22 @@ model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
 model.fit(train_data, train_labels, epochs=200)
 
 # predicting the test data points
+sse = 0
 for k in range(TEST_SPLIT):
 	x_input = test_data[k]
 	x_input = x_input.reshape((1, steps, featuresCount))
-	yhat = model.predict(x_input, verbose=0)
+	output = model.predict(x_input, verbose=0)
 	print("Prediction: ")
-	print(yhat)
+	print(output)
 	print("True: ")
 	print(test_labels[k])
-
+	for i in range(numberOfPredictedFeatures):
+		# print(output[0][i])
+		# print(test_labels[k][i])
+		sse += (output[0][i] - test_labels[k][i])**2
+	print("sse: ")
+	print(sse)
+ 
 #The true way to evaluate(i think but the accuracy is always 0 because the numbers are not exact)
 test_data = test_data.reshape((test_data.shape[0], test_data.shape[1], featuresCount))
 test_loss, test_acc = model.evaluate(test_data,  test_labels)
