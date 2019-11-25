@@ -1,117 +1,139 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
-# TensorFlow and tf.keras
-#import tensorflow as tf
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
-
-
-from tensorflow.python.framework import ops
+import tensorflow as tf
 from tensorflow import keras
-# from keras.models import Sequential, Graph
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import LSTM
-from keras.layers import Dropout
-from keras import optimizers
 
-import time
-
-# Helper libraries
 import numpy as np
 import matplotlib.pyplot as plt
 
-import os
-import pandas as pd
+import time
 
-#Quandl
+import os
+import pandas as pd 
 import quandl
 
-import sklearn
-import sklearn.preprocessing
+'''
+GRU Model needs at least 1 Dense layer w/ 4 nuerons
+Adding more Dense layers has little impact on accuracy
+Changing optimizer has larger impact on accuracy
+Cannot use GlobalAveragePooling1D or Embedding layers because they take
+data in different shape
+'''
 
-#Getting data
+def gru_model1(train_data, train_labels):
+    model = keras.Sequential([
+            keras.layers.GRU(50, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4),
+            ])
+    model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+    model.fit(train_data, train_labels, epochs=200)
+    return model
+
+def gru_model2(train_data, train_labels):
+    model = keras.Sequential([
+            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4)
+            ])
+    model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+    model.fit(train_data, train_labels, epochs=200)
+    return model
+
+def gru_model3(train_data, train_labels):
+    model = keras.Sequential([
+            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
+            keras.layers.Dense(4),
+            ])
+    model.compile(optimizer='sgd', loss='mse', metrics=['accuracy'])
+    model.fit(train_data, train_labels, epochs=200)
+    return model
+
+def gru_model4(train_data, train_labels):
+    model = keras.Sequential([
+            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            ])
+    model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+    model.fit(train_data, train_labels, epochs=200)
+    return model
+
+# lowest accuracy model (b/c optimizer is RMSprop)
+def gru_model5(train_data, train_labels):
+    model = keras.Sequential([
+            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            ])
+    model.compile(optimizer='RMSprop', loss='mse', metrics=['accuracy'])
+    model.fit(train_data, train_labels, epochs=200)
+    return model
+
+
 quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
 
-# tickers = ['AAPL', 'ATVI', 'ATHN', 'MSFT', 'ADBE', 'ORCL', 'CRM', 'WDAY', 'ACN', 'TWTR', 'CNQR', 'PEGA', 'AZPN', 'BYI']
+#tickers = ['AAPL', 'ATVI', 'ATHN', 'MSFT', 'ADBE', 'ORCL', 'CRM', 'WDAY', 'ACN', 'TWTR', 'CNQR', 'PEGA', 'AZPN', 'BYI']
+
 tickers = ['AAPL']
 
-#Getting data
-quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
-
-
-
-for ticker in tickers:
-
-    data = quandl.get_table('SHARADAR/SF1',
-    dimension = "ARQ",
-    qopts={"columns":['datekey','revenueusd','assets','capex','debt','ebit','equityusd','ev','fcf','inventory','marketcap','netinc','taxexp','workingcapital']},
-    ticker=ticker)
-
-    # Reversing the data so that the oldest timestamp is first
+for t in tickers:
+    data = quandl.get_table('SHARADAR/SF1', dimension = "ARQ",
+                            qopts={"columns":['ticker','datekey','revenueusd','assets','capex','debt','ebit','equityusd','ev','fcf','inventory','marketcap','netinc','taxexp','workingcapital']},
+                             ticker = t, paginate = True)
     data = data.iloc[::-1]
     data.pop('datekey')
-
-    # Removing emtpty data columns
+    
     data = data.select_dtypes(exclude=['object'])
     data = data.loc[:, (data != 0).any(axis=0)]
-    # Need to remove rows if they have nan in some of the cells
-
-    # Setting variables
+    
     steps = 4
     featuresCount = 13
     TEST_SPLIT = 5
     TRAIN_SPLIT = len(data) - TEST_SPLIT
     numberOfPredictedFeatures = 4
-
-    # Normalizing
+    
     data_mean = data[:TRAIN_SPLIT].mean(axis=0)
     data_std = data[:TRAIN_SPLIT].std(axis=0)
-    data = (data - data_mean) / data_std
+    data = (data-data_mean)/data_std
+    
+    train_data = []
+    train_labels = []
+    for i in range(TRAIN_SPLIT):
+        train_data.append(data.iloc[i:i+steps, :].values)
+        train_labels.append(data.loc[i+steps, 'ebit':'fcf'].values)
+    train_data = np.array(train_data)
+    train_labels = np.array(train_labels)
+    
+    test_data = []
+    test_labels = []
+    for j in range(TEST_SPLIT):
+    	temp = TRAIN_SPLIT - 1 - steps + j
+    	test_data.append(data.iloc[temp:temp + steps, :].values)
+    	test_labels.append(data.loc[TRAIN_SPLIT + j, 'ebit':'fcf'].values)
+    test_data = np.array(test_data)
+    test_labels = np.array(test_labels)
 
-    sequence_len = 10
-    raw_data = data.values
-    data = []
-    for i in range(len(raw_data) - sequence_len):
-        data.append(raw_data[i: i + sequence_len])
-    data = np.array(data)
-    valid_set_size = int(np.round(10 / 100 * data.shape[0]))
-    test_set_size = int(np.round(10 / 100 * data.shape[0]))
-    train_set_size = data.shape[0] - (valid_set_size + test_set_size)
-    x_train = data[:train_set_size, :-1, :]
-    y_train = data[:train_set_size, -1, :]
-    x_valid = data[train_set_size:train_set_size + valid_set_size, :-1, :]
-    y_valid = data[train_set_size:train_set_size + valid_set_size, -1, :]
-    x_test = data[train_set_size + valid_set_size:, :-1, :]
-    y_test = data[train_set_size + valid_set_size:, -1, :]
+    train_data = train_data.reshape((train_data.shape[0], train_data.shape[1], featuresCount))
 
-    print("x_train.shape = ", x_train.shape)
-    print("y_train.shape = ", y_train.shape)
-    print("x_valid.shape = ", x_valid.shape)
-    print("y_valid.shape = ", y_valid.shape)
-    print("x_test.shape = ", x_test.shape)
-    print("y_test.shape = ", y_test.shape)
+    # Change which model you're using here
+    model = gru_model1(train_data, train_labels)
 
-    n_steps = sequence_len - 1
-    n_inputs = 4
-    n_neurons = 200
-    n_outputs = 4
-    n_layers = 2
-    learning_ratep = 0.001
-    batch_size = 5
-    n_epochs = 100
-    train_set_size = x_train.shape[0]
-    test_set_size = x_test.shape[0]
-    tf.reset_default_graph()
-    xplaceholder = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
-    yplaceholder = tf.placeholder(tf.float32, [None, n_outputs])
+    sse = 0
+    for k in range(TEST_SPLIT):
+        x_input = test_data[k]
+        x_input = x_input.reshape((1, steps, featuresCount))
+        output = model.predict(x_input, verbose=0)
+        print("Prediction: ", output)
+        print("Actual: ", test_labels[k])
+        for i in range(numberOfPredictedFeatures):
+            sse += (output[0][i] - test_labels[k][i])**2
+        print("sse: ")
+        print(sse)
 
-    layers = tf.contrib.rnn.GRUCell(num_units = neurons, activations=tf.nn.leaky_relu)
-            for layer in range(n_layers)]
-    multi_layer_cell = tf.contrib.rnn.MultiRNNCell(layers)
-    loss = tf.reduce_mean(tf.square(outputs - y))
-    optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate)
-    training_optimizer = optimizer.minimize(loss)
+    test_data = test_data.reshape((test_data.shape[0], test_data.shape[1], featuresCount))
+    test_loss, test_acc = model.evaluate(test_data, test_labels)
+
+    print('\nTest loss:', test_loss)
+    print('Test accuracy:', test_acc)
+    
+    time.sleep(5)
