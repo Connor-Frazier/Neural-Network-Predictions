@@ -2,12 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 # TensorFlow and tf.keras
 import tensorflow as tf
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import LSTM
-from keras.layers import Dropout
-
-
+from tensorflow import keras
 
 # Helper libraries
 import numpy as np
@@ -21,10 +16,45 @@ import time
 #Quandl
 import quandl
 
+def getModel(model_name):
+	print("Running " + model_name)
+	if model_name == 'gru1':
+		return keras.Sequential([
+            keras.layers.GRU(50, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4),
+            ])
+	elif model_name == 'gru2':
+		return keras.Sequential([
+            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4)
+            ])
+	elif model_name == 'gru3':
+		return keras.Sequential([
+            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            ])
+	elif model_name == 'lstm1':
+		return None
+	elif model_name == 'lstm2':
+		return None
+	elif model_name == 'lstm3':
+		return None	
+
+
+
 #Getting data
 quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
 
 tickers = ['AAPL', 'ATVI', 'ATHN', 'MSFT', 'ADBE', 'ORCL', 'CRM', 'WDAY', 'ACN', 'TWTR', 'CNQR', 'PEGA', 'AZPN', 'BYI']
+
+models = ["gru1", "gru2", "gru3"]
+results = {}
+for modelName in models:
+	results[modelName] = {}
 
 #Getting data
 quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
@@ -68,6 +98,9 @@ for ticker in tickers:
 	train_data = np.array(train_data)
 	train_labels = np.array(train_labels)
 
+	#Fix feature coutn in case data is different than expected
+	featuresCount = len(train_data[1][0]);
+
 
 	#Setting up test data
 	test_data = []
@@ -81,36 +114,36 @@ for ticker in tickers:
 	test_data = np.array(test_data)
 	test_labels = np.array(test_labels)
 
+	for modelName in models:
+		model = getModel(modelName)
 
-	train_data = train_data.reshape((train_data.shape[0], train_data.shape[1], featuresCount))
-	model = Sequential()
-	model.add(LSTM(50, activation='relu', input_shape=(steps, featuresCount)))
-	model.add(Dense(4))
-	model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
-
-	model.fit(train_data, train_labels, epochs=200)
-
-	# predicting the test data points
-	sse = 0
-	for k in range(TEST_SPLIT):
-		x_input = test_data[k]
-		x_input = x_input.reshape((1, steps, featuresCount))
-		output = model.predict(x_input, verbose=0)
-		print("Prediction: ")
-		print(output)
-		print("True: ")
-		print(test_labels[k])
-		for i in range(numberOfPredictedFeatures):
-			sse += (output[0][i] - test_labels[k][i])**2
-		print("sse: ")
-		print(sse)
+		model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+		model.fit(train_data, train_labels, epochs=100)
+		# predicting the test data points
+		results[modelName][ticker] = {}
+		sse = 0
+		for k in range(TEST_SPLIT):
+			x_input = test_data[k]
+			x_input = x_input.reshape((1, steps, featuresCount))
+			output = model.predict(x_input, verbose=0)
+			print("Prediction: ")
+			print(output)
+			print("True: ")
+			print(test_labels[k])
+			for i in range(numberOfPredictedFeatures):
+				sse += (output[0][i] - test_labels[k][i])**2
+			print("sse: ")
+			print(sse)
+		sse_name = ticker + "_sse"
+		results[modelName][ticker][sse_name] = sse	
  
 	#The true way to evaluate(i think but the accuracy is always 0 because the numbers are not exact)
-	test_data = test_data.reshape((test_data.shape[0], test_data.shape[1], featuresCount))
-	test_loss, test_acc = model.evaluate(test_data,  test_labels)
+	# test_data = test_data.reshape((test_data.shape[0], test_data.shape[1], featuresCount))
+	# test_loss, test_acc = model.evaluate(test_data,  test_labels)
 
-	print('\nTest accuracy:', test_acc)
+	# print('\nTest accuracy:', test_acc)
 
-	time.sleep(3)
+	# time.sleep(3)
+	print(results)
 
 
