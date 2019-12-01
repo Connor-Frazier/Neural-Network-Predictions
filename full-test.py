@@ -13,6 +13,8 @@ import pandas as pd
 
 import time
 
+import csv
+
 #Quandl
 import quandl
 
@@ -52,6 +54,7 @@ quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
 tickers = ['AAPL', 'ATVI', 'ATHN', 'MSFT', 'ADBE', 'ORCL', 'CRM', 'WDAY', 'ACN', 'TWTR', 'CNQR', 'PEGA', 'AZPN', 'BYI']
 
 models = ["gru1", "gru2", "gru3"]
+# models = ["gru1"] this is used for script testing
 results = {}
 for modelName in models:
 	results[modelName] = {}
@@ -68,10 +71,9 @@ for ticker in tickers:
 	data = data.iloc[::-1]
 	data.pop('datekey')
 
-	#Removing emtpty data columns
+	#Cleaning data if necessary
 	data = data.select_dtypes(exclude=['object'])
 	data = data.loc[:, (data != 0).any(axis=0)]
-	#Need to remove rows if they have nan in some of the cells
 
 	#Setting variables
 	steps = 4
@@ -79,6 +81,7 @@ for ticker in tickers:
 	TEST_SPLIT = 5
 	TRAIN_SPLIT = len(data) - TEST_SPLIT
 	numberOfPredictedFeatures = 4
+	epochs = 1
 
 	#Normalizing
 	data_mean = data[:TRAIN_SPLIT].mean(axis=0)
@@ -92,7 +95,7 @@ for ticker in tickers:
 	#Data points at the moment consist of a history of 4 qvalue data points and the 5th as the target
 	for i in range(TRAIN_SPLIT):
 		train_data.append(data.iloc[i:i+steps, :].values)
-		#'accoci':'assetsnc' are example columns, will be an array for the 4/5 values we choose
+		#'accoci':'assetsnc' are example columns, will be an array for the 4
 		train_labels.append(data.loc[i+steps, 'ebit':'fcf'].values)
 	
 	train_data = np.array(train_data)
@@ -115,10 +118,13 @@ for ticker in tickers:
 	test_labels = np.array(test_labels)
 
 	for modelName in models:
+		#Get the model to test
 		model = getModel(modelName)
 
+		#Compile and train
 		model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
-		model.fit(train_data, train_labels, epochs=100)
+		model.fit(train_data, train_labels, epochs=epochs)
+		
 		# predicting the test data points
 		results[modelName][ticker] = {}
 		sse = 0
@@ -135,15 +141,18 @@ for ticker in tickers:
 			print("sse: ")
 			print(sse)
 		sse_name = ticker + "_sse"
-		results[modelName][ticker][sse_name] = sse	
+		results[modelName][ticker] = sse	
  
-	#The true way to evaluate(i think but the accuracy is always 0 because the numbers are not exact)
-	# test_data = test_data.reshape((test_data.shape[0], test_data.shape[1], featuresCount))
-	# test_loss, test_acc = model.evaluate(test_data,  test_labels)
+# Save results for each model in a csv file
+with open('sse_results.csv', 'w', newline='') as csvfile:
+	fieldnames = ['model'] + tickers
+	print(fieldnames)
+	writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-	# print('\nTest accuracy:', test_acc)
-
-	# time.sleep(3)
-	print(results)
+	writer.writeheader()
+	for key, value in results.items():
+		row = value
+		row['model'] = key
+		writer.writerow(row)
 
 
