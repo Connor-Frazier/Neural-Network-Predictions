@@ -71,10 +71,9 @@ for ticker in tickers:
 	data = data.iloc[::-1]
 	data.pop('datekey')
 
-	#Removing emtpty data columns
+	#Cleaning data if necessary
 	data = data.select_dtypes(exclude=['object'])
 	data = data.loc[:, (data != 0).any(axis=0)]
-	#Need to remove rows if they have nan in some of the cells
 
 	#Setting variables
 	steps = 4
@@ -152,8 +151,8 @@ with open('sse_results.csv', 'w', newline='') as csvfile:
 
 	writer.writeheader()
 	for key, value in results.items():
-		newDict = value
-		newDict['model'] = key
-		writer.writerow(newDict)
+		row = value
+		row['model'] = key
+		writer.writerow(row)
 
 
