@@ -78,10 +78,11 @@ for ticker in tickers:
 	#Setting variables
 	steps = 4
 	featuresCount = 13
-	TEST_SPLIT = 5
+	TEST_SPLIT = 4
 	TRAIN_SPLIT = len(data) - TEST_SPLIT
 	numberOfPredictedFeatures = 4
 	epochs = 1
+	predictions = ['ebit', 'ev', 'netinc', 'revenueusd']
 
 	#Normalizing
 	data_mean = data[:TRAIN_SPLIT].mean(axis=0)
@@ -96,7 +97,7 @@ for ticker in tickers:
 	for i in range(TRAIN_SPLIT):
 		train_data.append(data.iloc[i:i+steps, :].values)
 		#'accoci':'assetsnc' are example columns, will be an array for the 4
-		train_labels.append(data.loc[i+steps, 'ebit':'fcf'].values)
+		train_labels.append(data.loc[i+steps, predictions].values)
 	
 	train_data = np.array(train_data)
 	train_labels = np.array(train_labels)
@@ -112,7 +113,7 @@ for ticker in tickers:
 	for j in range(TEST_SPLIT):
 		temp = TRAIN_SPLIT - 1 - steps + j
 		test_data.append(data.iloc[temp:temp + steps, :].values)
-		test_labels.append(data.loc[TRAIN_SPLIT + j, 'ebit':'fcf'].values)
+		test_labels.append(data.loc[TRAIN_SPLIT + j, predictions].values)
 
 	test_data = np.array(test_data)
 	test_labels = np.array(test_labels)
@@ -126,27 +127,22 @@ for ticker in tickers:
 		model.fit(train_data, train_labels, epochs=epochs)
 		
 		# predicting the test data points
+		print("Testing")
 		results[modelName][ticker] = {}
 		sse = 0
 		for k in range(TEST_SPLIT):
 			x_input = test_data[k]
 			x_input = x_input.reshape((1, steps, featuresCount))
 			output = model.predict(x_input, verbose=0)
-			print("Prediction: ")
-			print(output)
-			print("True: ")
-			print(test_labels[k])
 			for i in range(numberOfPredictedFeatures):
 				sse += (output[0][i] - test_labels[k][i])**2
-			print("sse: ")
-			print(sse)
-		sse_name = ticker + "_sse"
+		print("sse: ")
+		print(sse)
 		results[modelName][ticker] = sse	
  
 # Save results for each model in a csv file
 with open('sse_results.csv', 'w', newline='') as csvfile:
 	fieldnames = ['model'] + tickers
-	print(fieldnames)
 	writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
 	writer.writeheader()
