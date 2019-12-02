@@ -22,29 +22,42 @@ def getModel(model_name):
 	print("Running " + model_name)
 	if model_name == 'gru1':
 		return keras.Sequential([
-            keras.layers.GRU(50, activation='relu', input_shape=(steps, featuresCount)),
-            keras.layers.Dense(4),
+            keras.layers.GRU(5, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4)
             ])
 	elif model_name == 'gru2':
 		return keras.Sequential([
-            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
-            keras.layers.Dense(4),
+            keras.layers.GRU(10, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
+            keras.layers.Dense(10),
+            keras.layers.Dense(10),
             keras.layers.Dense(4)
             ])
 	elif model_name == 'gru3':
 		return keras.Sequential([
-            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount)),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
+            keras.layers.GRU(30, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(20),
+            keras.layers.Dense(10),
+            keras.layers.Dense(4)
             ])
 	elif model_name == 'lstm1':
-		return None
+		return keras.Sequential([
+            keras.layers.LSTM(5, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4)
+            ])
 	elif model_name == 'lstm2':
-		return None
+		return keras.Sequential([
+            keras.layers.LSTM(10, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(10, activation='relu'),
+            keras.layers.Dense(10, activation='relu'),
+            keras.layers.Dense(4)
+            ])
 	elif model_name == 'lstm3':
-		return None	
+		return keras.Sequential([
+            keras.layers.LSTM(30, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(20, activation='relu'),
+            keras.layers.Dense(10, activation='relu'),
+            keras.layers.Dense(4)
+            ])	
 
 
 
@@ -53,7 +66,7 @@ quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
 
 tickers = ['AAPL', 'ATVI', 'ATHN', 'MSFT', 'ADBE', 'ORCL', 'CRM', 'WDAY', 'ACN', 'TWTR', 'CNQR', 'PEGA', 'AZPN', 'BYI']
 
-models = ["gru1", "gru2", "gru3"]
+models = ["gru1", "gru2", "gru3", "lstm1", "lstm2", "lstm3"]
 # models = ["gru1"] this is used for script testing
 results = {}
 for modelName in models:
@@ -81,7 +94,7 @@ for ticker in tickers:
 	TEST_SPLIT = 4
 	TRAIN_SPLIT = len(data) - TEST_SPLIT
 	numberOfPredictedFeatures = 4
-	epochs = 1
+	epochs = 100
 	predictions = ['ebit', 'ev', 'netinc', 'revenueusd']
 
 	#Normalizing
