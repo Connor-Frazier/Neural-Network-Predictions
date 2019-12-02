@@ -22,41 +22,41 @@ def getModel(model_name):
 	print("Running " + model_name)
 	if model_name == 'gru1':
 		return keras.Sequential([
-            keras.layers.GRU(50, activation='relu', input_shape=(steps, featuresCount)),
-            keras.layers.Dense(4),
+            keras.layers.GRU(5, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4)
             ])
 	elif model_name == 'gru2':
 		return keras.Sequential([
-            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
-            keras.layers.Dense(4),
+            keras.layers.GRU(10, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
+            keras.layers.Dense(10),
+            keras.layers.Dense(10),
             keras.layers.Dense(4)
             ])
 	elif model_name == 'gru3':
 		return keras.Sequential([
-            keras.layers.GRU(200, activation='relu', input_shape=(steps, featuresCount)),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
+            keras.layers.GRU(30, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(20),
+            keras.layers.Dense(10),
+            keras.layers.Dense(4)
             ])
 	elif model_name == 'lstm1':
 		return keras.Sequential([
-            keras.layers.LSTM(50, activation='relu', input_shape=(steps, featuresCount)),
-            keras.layers.Dense(4),
+            keras.layers.LSTM(5, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4)
             ])
 	elif model_name == 'lstm2':
 		return keras.Sequential([
-            keras.layers.LSTM(200, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
-            keras.layers.Dense(4),
+            keras.layers.LSTM(10, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(10, activation='relu'),
+            keras.layers.Dense(10, activation='relu'),
             keras.layers.Dense(4)
             ])
 	elif model_name == 'lstm3':
 		return keras.Sequential([
-            keras.layers.LSTM(200, activation='relu', input_shape=(steps, featuresCount)),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
-            keras.layers.Dense(4),
+            keras.layers.LSTM(30, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(20, activation='relu'),
+            keras.layers.Dense(10, activation='relu'),
+            keras.layers.Dense(4)
             ])	
 
 
