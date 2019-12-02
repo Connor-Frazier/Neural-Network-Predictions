@@ -40,11 +40,24 @@ def getModel(model_name):
             keras.layers.Dense(4),
             ])
 	elif model_name == 'lstm1':
-		return None
+		return keras.Sequential([
+            keras.layers.LSTM(50, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4),
+            ])
 	elif model_name == 'lstm2':
-		return None
+		return keras.Sequential([
+            keras.layers.LSTM(200, activation='relu', input_shape=(steps, featuresCount), return_sequences=False),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4)
+            ])
 	elif model_name == 'lstm3':
-		return None	
+		return keras.Sequential([
+            keras.layers.LSTM(200, activation='relu', input_shape=(steps, featuresCount)),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            keras.layers.Dense(4),
+            ])	
 
 
 
@@ -53,7 +66,7 @@ quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
 
 tickers = ['AAPL', 'ATVI', 'ATHN', 'MSFT', 'ADBE', 'ORCL', 'CRM', 'WDAY', 'ACN', 'TWTR', 'CNQR', 'PEGA', 'AZPN', 'BYI']
 
-models = ["gru1", "gru2", "gru3"]
+models = ["gru1", "gru2", "gru3", "lstm1", "lstm2", "lstm3"]
 # models = ["gru1"] this is used for script testing
 results = {}
 for modelName in models:
