@@ -94,7 +94,7 @@ for ticker in tickers:
 	TEST_SPLIT = 4
 	TRAIN_SPLIT = len(data) - TEST_SPLIT
 	numberOfPredictedFeatures = 4
-	epochs = 1
+	epochs = 100
 	predictions = ['ebit', 'ev', 'netinc', 'revenueusd']
 
 	#Normalizing
