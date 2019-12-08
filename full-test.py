@@ -136,7 +136,8 @@ for ticker in tickers:
 		model = getModel(modelName)
 
 		#Compile and train
-		model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+		# model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+		model.compile(loss='mse', optimizer=tf.keras.optimizers.RMSprop(0.001), metrics=['mse'])
 		model.fit(train_data, train_labels, epochs=epochs)
 		
 		# predicting the test data points
