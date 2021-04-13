@@ -56,7 +56,7 @@ def getModel(model_name):
             ])	
 
 #Set up
-quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
+quandl.ApiConfig.api_key = "secret"
 tickers = ['AAPL', 'ATVI', 'ATHN', 'MSFT', 'ADBE', 'ORCL', 'CRM', 'WDAY', 'ACN', 'TWTR', 'CNQR', 'PEGA', 'AZPN', 'BYI']
 models = ["gru1", "gru2", "gru3", "lstm1", "lstm2", "lstm3"]
 quandl.ApiConfig.api_key = "c41SJX7-N-p3yWF2Ksmk"
